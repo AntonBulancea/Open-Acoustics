@@ -31,6 +31,15 @@
     <Filter Include="Source Files\OpenGl\Shaders\Shader Program">
       <UniqueIdentifier>{55f98bce-3a6f-440b-88b6-abd51a102149}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\OpenGl\GameObject">
+      <UniqueIdentifier>{e9c75d61-96ae-4430-9208-515fecfbe806}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Simulation">
+      <UniqueIdentifier>{5eba44a9-1dbd-4748-815a-1ee3edc06ed1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\OpenCv">
+      <UniqueIdentifier>{fb62f374-35e5-4444-b4cd-18189245bd5b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -39,15 +48,38 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files\Main</Filter>
     </ClCompile>
-    <ClCompile Include="Shader.cpp">
+    <ClCompile Include="Shader.h">
       <Filter>Source Files\OpenGl\Shaders\Shader Program</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.h">
+      <Filter>Source Files\OpenGl\GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.h">
+      <Filter>Source Files\OpenGl\GameObject</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="fragment.glsl">
+    <ClInclude Include="Emitter.h">
+      <Filter>Source Files\Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Array.h">
+      <Filter>Source Files\Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle.h">
+      <Filter>Source Files\Simulation</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="emiVertex.glsl">
+      <Filter>Source Files\OpenGl\Shaders\Vertex</Filter>
+    </None>
+    <None Include="emiFragment.glsl">
       <Filter>Source Files\OpenGl\Shaders\Fragment</Filter>
     </None>
-    <None Include="vertex.glsl">
+    <None Include="parFragment.glsl">
+      <Filter>Source Files\OpenGl\Shaders\Fragment</Filter>
+    </None>
+    <None Include="parVertex.glsl">
       <Filter>Source Files\OpenGl\Shaders\Vertex</Filter>
     </None>
   </ItemGroup>
