@@ -11,12 +11,20 @@ class Emitter {
 
 private:
 	vec3 pos;
+	vec3 col;
 	float freq;
 	float phase;
 
 public:
 	void setPos(vec3 pos) {
 		this->pos = pos;
+	}
+	void setCol(vec3 col) {
+		this->col = col;
+	}
+	void setColFromPhase() {
+		float colPhase = getPhase() / 2;
+		setCol(vec3(colPhase,colPhase,colPhase));
 	}
 	void setFrequency(float freq) {
 		this->freq = freq;
@@ -25,6 +33,9 @@ public:
 		this->phase = phase;
 	}
 
+	vec3 getCol() {
+		return col;
+	}
 	vec3 getPos() {
 		return pos;
 	}

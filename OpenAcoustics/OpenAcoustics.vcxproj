@@ -140,16 +140,20 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Array.h" />
+    <ClInclude Include="CameraInstance.h" />
     <ClInclude Include="Emitter.h" />
     <ClInclude Include="Particle.h" />
+    <ClInclude Include="Simulation.h" />
+    <ClInclude Include="Slice.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="emiFragment.glsl" />
     <None Include="emiVertex.glsl" />
     <None Include="parFragment.glsl" />
     <None Include="parVertex.glsl" />
+    <None Include="sliceFragment.glsl" />
+    <None Include="sliceVertex.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

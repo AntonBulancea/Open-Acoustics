@@ -7,6 +7,8 @@
 #include "Model.h"
 #include "Shader.h"
 #include "Particle.h"
+#include "Simulation.h"
+#include "Slice.h"
 
 #include <vector>
 #include <iostream>
@@ -31,9 +33,10 @@ private:
 
 	vector<Emitter> emitters;
 	vector<Particle> particles;
+	vector<Slice> slices;
 
 public:
-	void generateArray() {
+	void generateArray(vec3 startColor) {
 		vec3 pos;
 		Emitter emi;
 
@@ -76,7 +79,9 @@ public:
 			
 			translation = translate(translation,pos);
 			scaling = scale(scaling, vec3(cm/1.8, cm/1.8, cm/1.8));
+			AssignPhasesToArray(GetParticle(0));
 
+			shader.setVec3("color", emi.getCol());
 			shader.setMat4("model", mod*translation*scaling);
 			shader.use();
 
@@ -93,13 +98,44 @@ public:
 			mat4 scaling = mat4(1.0f);
 
 			translation = translate(translation, pos);
-			scaling = scale(scaling, vec3(cm / 3, cm / 3, cm / 3));
+			scaling = scale(scaling, vec3(cm / 8, cm / 8, cm / 8));
 
 			shader.setMat4("model", mod * translation * scaling);
 			shader.setVec3("color", par.getColor());
 
 			model.Draw(shader);
 		}
+	}
+	void DrawSliceArray(Model model, Shader shader, mat4 mod){
+		vec3 pos;
+
+		for (Slice sli : slices) {
+			mat4 translation = mat4(1.0f);
+			mat4 scaling = mat4(1.0f);
+
+			translation = translate(translation, pos);
+			scaling = scale(scaling, vec3(cm / 8, cm / 8, cm / 8));
+
+			shader.setMat4("model", mod * translation * scaling);
+
+			model.Draw(shader);
+		}
+	}
+
+	void AssignPhasesToArray(Particle par) {
+		vec3 pos = par.getPos();
+		Simulation sim;
+		for (Emitter &emi : emitters) {
+			emi.setPhase(sim.CalculatePhase(emi,par));
+			emi.setColFromPhase();
+		}
+	}
+
+	Particle &GetParticle(int pointer) {
+		return particles.at(pointer);
+	}
+	Emitter &GetEmitter(int pointer) {
+		return emitters.at(pointer);
 	}
 
 	vec3 FindArrayCenter(float height) {
