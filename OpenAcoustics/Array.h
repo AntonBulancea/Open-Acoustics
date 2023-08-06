@@ -90,9 +90,11 @@ public:
 		}
 	void DrawParticleArray(Model model, Shader shader, mat4 mod) {
 		vec3 pos;
+		vec3 shad;
 
 		for (Particle par : particles) {
 			pos = par.getPos();
+			shad = par.getPosShad();
 
 			mat4 translation = mat4(1.0f);
 			mat4 scaling = mat4(1.0f);
@@ -102,6 +104,13 @@ public:
 
 			shader.setMat4("model", mod * translation * scaling);
 			shader.setVec3("color", par.getColor());
+
+			model.Draw(shader);
+			
+			mat4 translatio1n = mat4(1.0f);
+			translatio1n = translate(translatio1n, shad);
+			shader.setVec3("color", par.getColorShad());
+			shader.setMat4("model", mod * translatio1n * scaling);
 
 			model.Draw(shader);
 		}
@@ -122,6 +131,12 @@ public:
 		}
 	}
 
+	void SetParticlePos(int n, vec3 pos) {
+		particles.at(n).setPos(pos);
+	}
+	void SetShadowPos(int n, vec3 pos) {
+		particles.at(n).setPosShad(pos);
+	}
 	void AssignPhasesToArray(Particle par) {
 		vec3 pos = par.getPos();
 		Simulation sim;
@@ -131,16 +146,25 @@ public:
 		}
 	}
 
+	int getColSize() {
+		return (collumnSize * cm) + (space*cm*collumnSize);
+	}
+	int getRowSize() {
+		return (rowSize * cm) + (space * cm * rowSize);
+	}
+
 	Particle &GetParticle(int pointer) {
 		return particles.at(pointer);
 	}
 	Emitter &GetEmitter(int pointer) {
 		return emitters.at(pointer);
 	}
-
 	vec3 FindArrayCenter(float height) {
 		int centerCoord = collumnSize * (rowSize / 2) + (collumnSize / 2);
 		vec3 pos = emitters.at(centerCoord).getPos();
 		return vec3(pos.x,pos.y+height,pos.z);
+	}
+	vec3 FindArrayBegining() {
+		return emitters.at(0).getPos();
 	}
 };

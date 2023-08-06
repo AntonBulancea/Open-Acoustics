@@ -18,6 +18,7 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processInput(GLFWwindow* window);
 void clearColors();
 
@@ -29,7 +30,12 @@ const unsigned int SCR_HEIGHT = 600;
 unsigned int VAO, VBO;
 
 //OpenCv Values
-bool showCameraVid = false;
+bool showCameraVid = true; // #1
+bool synchronizeVid = false;// #2
+bool calculateShadePhase = false; // #3
+
+float LockX = .01f;
+float LockY = .01f;
 
 //Time Values
 float deltaTime = 0.0f;
@@ -55,14 +61,15 @@ int h = 0.0f;
 
 //Emitter Colors
 vec3 emiColor = vec3(0.337, 0.537, 0.859);
-vec3 parColor = vec3(0.0, 0.3, 0.0);
+vec3 parColor = vec3(0, 0.502, 0.392);
+vec3 shaColor = vec3(1.0, 0.0, 0.0);
 vec3 particlePos = vec3(0.0f, 0.0f, 0.0f);
 
 int main()
 {
 	//Classes & Variables Ini
 	GLFWwindow* window = initializeWindow();
-	
+
 	Shader emiShader("emiVertex.glsl", "emiFragment.glsl");
 	Shader parShader("parVertex.glsl", "parFragment.glsl");
 	Shader sliceShader("sliceVertex.glsl", "sliceFragment.glsl");
@@ -75,11 +82,12 @@ int main()
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
+	glfwSetKeyCallback(window, key_callback);
 
 	// Set Up Matrix
 	mat4 view = mat4(1.0f);
 	mat4 projection = mat4(1.0f);
-	
+
 	mat4 emiModel = mat4(1.0f);
 	mat4 parModel = mat4(1.0f);
 
@@ -87,12 +95,41 @@ int main()
 	arr.generateArray(emiColor);
 	arr.generateParticle(particlePos = arr.FindArrayCenter(.5f));
 
+	arr.GetParticle(0).setColor(parColor);
+	arr.GetParticle(0).setColorShad(shaColor);
+
 	CameraInstance instance = CameraInstance(0);
-	
+	float prevX = 0, prevY = 0;
+
 	//Update Loop
 	while (!glfwWindowShouldClose(window))
 	{
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		// OpenCV shadow update
+
+		CameraInstance::Center c;
+		c = instance.UpdateView(showCameraVid);
+
+		float xPo = arr.getColSize() * c.xCoord;
+		float yPo = arr.getColSize() * c.yCoord;
+		float zPo = .2f;
+		vec3 shadowPos = vec3(0,0,0);
+
+		if (prevX != 0) {
+			if (abs(xPo - prevX) < LockX || abs(yPo - prevY) < LockY) {
+				shadowPos = vec3(xPo, zPo, yPo);
+				arr.SetShadowPos(0, shadowPos);
+				prevX = xPo;
+				prevY = yPo;
+			}
+			else {
+				cout << "locked" << endl;
+			}
+		}
+		else {
+			prevX = xPo;
+			prevY = yPo;
+		}
+
 
 		// Calculate DeltaTime
 		currentFrame = static_cast<float>(glfwGetTime());
@@ -111,15 +148,17 @@ int main()
 		emiShader.setMat4("projection", projection);
 
 		arr.DrawArray(emitter, emiShader, emiModel);
-		arr.GetParticle(0).setPos(particlePos);
+		if (!synchronizeVid) {
+			arr.GetParticle(0).setPos(particlePos);
+		}
+		else {
+			particlePos = shadowPos;
+		}
 		arr.DrawParticleArray(particle, parShader, parModel);
-
+		
+		synchronizeVid = false;
 		glfwSwapBuffers(window);
 		glfwPollEvents();
-
-		// OpenCV update
-		showCameraVid = instance.UpdateView(showCameraVid);
-		cout << showCameraVid;
 	}
 
 	glfwTerminate();
@@ -180,11 +219,13 @@ void processInput(GLFWwindow* window)
 		particlePos += vec3(0.0f, 1.0f, 0.0f) * partspeed;
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
 		particlePos += vec3(0.0f, -1.0f, 0.0f) * partspeed;
-
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		showCameraVid = true;
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		showCameraVid = false;
+}
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS) // Show/Hide camera window
+		showCameraVid = !showCameraVid; 
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS) // Synchronize shade particle with main
+		synchronizeVid = true; 
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
