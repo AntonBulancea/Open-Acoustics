@@ -155,6 +155,10 @@
     <None Include="sliceFragment.glsl" />
     <None Include="sliceVertex.glsl" />
   </ItemGroup>
+  <ItemGroup>
+    <Object Include="emitter.obj" />
+    <Object Include="particle.obj" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>
