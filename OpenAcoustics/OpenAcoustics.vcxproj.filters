@@ -40,6 +40,9 @@
     <Filter Include="Source Files\OpenGl\Object">
       <UniqueIdentifier>{e9c75d61-96ae-4430-9208-515fecfbe806}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Serial">
+      <UniqueIdentifier>{3452fec7-2211-4a9a-b6e7-7a9578ad8c72}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -76,6 +79,9 @@
     </ClInclude>
     <ClInclude Include="CameraInstance.h">
       <Filter>Source Files\OpenCv</Filter>
+    </ClInclude>
+    <ClInclude Include="SerialConnection.h">
+      <Filter>Source Files\Serial</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -49,7 +49,7 @@ public:
 		shadowCol = col;
 	}
 	void setPosShad(vec3 pos) {
-		shadowPos = pos;
+		shadowPos = pos;// 
 	}
 	
 	vec3 getPosShad() {

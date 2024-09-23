@@ -1,5 +1,5 @@
-﻿#include <glad.h>
-#include <glfw3.h> 
+﻿#include <glad/glad.h>
+#include <GLFW/glfw3.h> 
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -13,12 +13,14 @@
 #include "Emitter.h"
 #include "Array.h"
 #include "CameraInstance.h"
+#include "SerialConnection.h"
 
 //Functions Call
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void processInput(GLFWwindow* window);
 void clearColors();
 
@@ -27,6 +29,10 @@ GLFWwindow* initializeWindow();
 //OpenGl Values
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+
+float xpos;
+float ypos;
+
 unsigned int VAO, VBO;
 
 //OpenCv Values
@@ -36,6 +42,10 @@ bool calculateShadePhase = false; // #3
 
 float LockX = .01f;
 float LockY = .01f;
+
+//Simulation Values
+Array arr = Array();
+Emitter selected = Emitter();
 
 //Time Values
 float deltaTime = 0.0f;
@@ -83,6 +93,7 @@ int main()
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 	glfwSetKeyCallback(window, key_callback);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
 
 	// Set Up Matrix
 	mat4 view = mat4(1.0f);
@@ -91,26 +102,25 @@ int main()
 	mat4 emiModel = mat4(1.0f);
 	mat4 parModel = mat4(1.0f);
 
-	Array arr = Array();
+	// Array Setup
 	arr.generateArray(emiColor);
 	arr.generateParticle(particlePos = arr.FindArrayCenter(.5f));
 
 	arr.GetParticle(0).setColor(parColor);
 	arr.GetParticle(0).setColorShad(shaColor);
 
-	CameraInstance instance = CameraInstance(0);
+	SerialConnection serial = SerialConnection();
+	serial.begin();
+	
 	float prevX = 0, prevY = 0;
 
 	//Update Loop
 	while (!glfwWindowShouldClose(window))
 	{
-		// OpenCV shadow update
+		// Update the Shadow pos
 
-		CameraInstance::Center c;
-		c = instance.UpdateView(showCameraVid);
-
-		float xPo = arr.getColSize() * c.xCoord;
-		float yPo = arr.getColSize() * c.yCoord;
+		float xPo = arr.getColSize() * 1;
+		float yPo = arr.getColSize() * 1;
 		float zPo = .2f;
 		vec3 shadowPos = vec3(0,0,0);
 
@@ -147,7 +157,9 @@ int main()
 		emiShader.setMat4("view", view);
 		emiShader.setMat4("projection", projection);
 
-		arr.DrawArray(emitter, emiShader, emiModel);
+		//Draw Array and Send to Serial
+		arr.DrawArray(emitter, emiShader, emiModel, selected, serial);
+		
 		if (!synchronizeVid) {
 			arr.GetParticle(0).setPos(particlePos);
 		}
@@ -159,9 +171,11 @@ int main()
 		synchronizeVid = false;
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
 	}
 
 	glfwTerminate();
+	serial.close();
 	return 0;
 }
 
@@ -227,6 +241,27 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_2 && action == GLFW_PRESS) // Synchronize shade particle with main
 		synchronizeVid = true; 
 }
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		unsigned char pick_col[3];
+		glReadPixels(SCR_WIDTH/2,SCR_HEIGHT/2, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pick_col);
+
+		float r = pick_col[1] / 255.0;
+		selected = arr.GetEmitter(r);
+
+		/*
+		cout << "a: " << r << endl;
+		cout << "r: " << arr.GetEmitter(0).getCol().r << endl;
+		cout << "g: " << arr.GetEmitter(0).getCol().g << endl;
+		cout << "b: " << arr.GetEmitter(0).getCol().b << endl << endl;
+		*/
+
+	}
+	else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+		selected = Emitter();
+	}
+}
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	fov -= yoffset * 5;
@@ -237,8 +272,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 		fov = 119;
 }
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
-	float xpos = static_cast<float>(xposIn);
-	float ypos = static_cast<float>(yposIn);
+	xpos = static_cast<float>(xposIn);
+	ypos = static_cast<float>(yposIn);
 
 	if (firstMouse)
 	{

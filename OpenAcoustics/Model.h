@@ -2,7 +2,7 @@
 #define MODEL_H
 
 #include <GLFW/glfw3.h>
-#include <glad.h> 
+#include <glad/glad.h> 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <assimp/Importer.hpp>

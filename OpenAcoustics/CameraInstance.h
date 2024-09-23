@@ -1,3 +1,4 @@
+/*
 #pragma once
 
 #include <iostream>
@@ -133,3 +134,5 @@ public:
 		return worldCenter;
 	}
 };
+
+*/

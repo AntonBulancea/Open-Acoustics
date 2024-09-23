@@ -3,11 +3,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <cstdlib>
 
 #include "Model.h"
 #include "Shader.h"
 #include "Particle.h"
 #include "Simulation.h"
+#include "SerialConnection.h"
 #include "Slice.h"
 
 #include <vector>
@@ -68,22 +70,34 @@ public:
 		}
 	}
 
-	void DrawArray(Model model, Shader shader, mat4 mod) {
+	void DrawArray(Model model, Shader shader, mat4 mod, Emitter selected, SerialConnection &ser){
 		vec3 pos;
 
 		for (Emitter emi : emitters) {
+			//Drawing the Emitters
+
 			pos = emi.getPos();
 
 			mat4 translation = mat4(1.0f);
 			mat4 scaling = mat4(1.0f);
 			
 			translation = translate(translation,pos);
+
 			scaling = scale(scaling, vec3(cm/1.8, cm/1.8, cm/1.8));
+
+			if(selected.getCol() == emi.getCol())
+				scaling = scale(scaling, vec3(cm / 1.8, cm / 1.8, cm / 1.8));
+			
 			AssignPhasesToArray(GetParticle(0));
 
 			shader.setVec3("color", emi.getCol());
 			shader.setMat4("model", mod*translation*scaling);
 			shader.use();
+
+			//Sending Info to Serial Port
+			
+			//int ph = emi.getPhase();
+			//ser.SendPhase(ph);
 
 			model.Draw(shader);
 		}
@@ -158,6 +172,27 @@ public:
 	}
 	Emitter &GetEmitter(int pointer) {
 		return emitters.at(pointer);
+	}
+	Emitter &GetEmitter(float col) {
+		Emitter colEmi;
+		float error = numeric_limits<float>::max();
+
+		for (Emitter& emi : emitters) {
+			if(abs(col - (emi.getCol().r)) < error){
+				error = abs(col - (emi.getCol().r));
+				colEmi = emi;
+			}
+		}
+
+		return colEmi;
+	}
+	vector<int> &GetPhases() {
+		vector<int> temp;
+
+		for (Emitter &emi : emitters)
+			temp.push_back(emi.getPhase());
+
+		return temp;
 	}
 	vec3 FindArrayCenter(float height) {
 		int centerCoord = collumnSize * (rowSize / 2) + (collumnSize / 2);

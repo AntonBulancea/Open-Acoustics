@@ -23,7 +23,7 @@ public:
 		this->col = col;
 	}
 	void setColFromPhase() {
-		float colPhase = getPhase() / 2;
+		float colPhase = getPhase() / 3;
 		setCol(vec3(colPhase,colPhase,colPhase));
 	}
 	void setFrequency(float freq) {
