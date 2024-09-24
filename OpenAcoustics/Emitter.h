@@ -23,7 +23,7 @@ public:
 		this->col = col;
 	}
 	void setColFromPhase() {
-		float colPhase = getPhase() / 3;
+		float colPhase = getPhase() / 2;
 		setCol(vec3(colPhase,colPhase,colPhase));
 	}
 	void setFrequency(float freq) {
@@ -31,6 +31,11 @@ public:
 	}
 	void setPhase(float phase) {
 		this->phase = phase;
+	}
+	void DebugInfo() {
+		cout << "Emitter Info:" << endl;
+		cout << "Freq: " << freq << endl;
+		cout << "Phase: " << phase << endl << endl;
 	}
 
 	vec3 getCol() {

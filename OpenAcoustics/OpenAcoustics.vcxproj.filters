@@ -43,9 +43,6 @@
     <Filter Include="Source Files\Serial">
       <UniqueIdentifier>{3452fec7-2211-4a9a-b6e7-7a9578ad8c72}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\ObjectModels">
-      <UniqueIdentifier>{fb4a1e55-5a9b-4921-9eff-bf57570b1537}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -106,13 +103,5 @@
     <None Include="sliceVertex.glsl">
       <Filter>Source Files\OpenGl\Shaders\Vertex</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="emitter.obj">
-      <Filter>Source Files\ObjectModels</Filter>
-    </Object>
-    <Object Include="particle.obj">
-      <Filter>Source Files\ObjectModels</Filter>
-    </Object>
   </ItemGroup>
 </Project>

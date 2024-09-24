@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <vector>
+#include <math.h>
 
 #include "Shader.h"
 #include "Model.h"
@@ -46,6 +47,8 @@ float LockY = .01f;
 //Simulation Values
 Array arr = Array();
 Emitter selected = Emitter();
+
+const float layerHeight = 1;
 
 //Time Values
 float deltaTime = 0.0f;
@@ -103,7 +106,7 @@ int main()
 	mat4 parModel = mat4(1.0f);
 
 	// Array Setup
-	arr.generateArray(emiColor);
+	arr.generateArray(emiColor, layerHeight);
 	arr.generateParticle(particlePos = arr.FindArrayCenter(.5f));
 
 	arr.GetParticle(0).setColor(parColor);
@@ -140,7 +143,6 @@ int main()
 			prevY = yPo;
 		}
 
-
 		// Calculate DeltaTime
 		currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
@@ -171,7 +173,6 @@ int main()
 		synchronizeVid = false;
 		glfwSwapBuffers(window);
 		glfwPollEvents();
-
 	}
 
 	glfwTerminate();
@@ -244,19 +245,27 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		unsigned char pick_col[3];
-		glReadPixels(SCR_WIDTH/2,SCR_HEIGHT/2, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pick_col);
+		float emiX, emiY, alpha, beta, r;
+		alpha = (radians(pitch_));
+		beta = (radians(yaw_));
 
-		float r = pick_col[1] / 255.0;
-		selected = arr.GetEmitter(r);
+		r = tan(pi<float>()/2 - alpha) * cameraPos.y; // r = tan(pi/2 - a) * zPos
+		emiX = cos(beta) * r; // x difference from the camera pov
+		emiY = sin(beta) * r; // y difference from the camera pov
 
 		/*
-		cout << "a: " << r << endl;
-		cout << "r: " << arr.GetEmitter(0).getCol().r << endl;
-		cout << "g: " << arr.GetEmitter(0).getCol().g << endl;
-		cout << "b: " << arr.GetEmitter(0).getCol().b << endl << endl;
+		cout << "yaw: " << yaw_ << endl << "pitch: " << -pitch_ << endl;
+		cout << "x: " << cameraPos.x << endl << "y: " << cameraPos.y << endl << "z: " << cameraPos.z << endl;
+		cout << "radius: " << r << endl;
+		cout << "xBias: " << emiX << endl;
+		cout << "yBias: " << emiY << endl << endl;
 		*/
 
+		emiX = -(emiX)+cameraPos.x; // adding camera pos
+		emiY = -(emiY)+cameraPos.z; 
+		
+		vec3 selectedPos = vec3(emiX, layerHeight, emiY); // searching for the closest emitter
+		selected = arr.GetEmitter(selectedPos);
 	}
 	else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
 		selected = Emitter();
@@ -300,13 +309,17 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 	if (pitch_ < -89.0f)
 		pitch_ = -89.0f;
 
+	if (yaw_ > 360)
+		yaw_ = 0;
+	if (yaw_ < 0)
+		yaw_ = 360;
+
 	vec3 front;
 	front.x = cos(radians(yaw_)) * cos(radians(pitch_));
 	front.y = sin(radians(pitch_));
 	front.z = sin(radians(yaw_)) * cos(radians(pitch_));
 	cameraFront = normalize(front);
 }
-
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);

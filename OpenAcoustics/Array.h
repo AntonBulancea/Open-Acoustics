@@ -38,9 +38,10 @@ private:
 	vector<Slice> slices;
 
 public:
-	void generateArray(vec3 startColor) {
+	void generateArray(vec3 startColor, float zHeight) {
 		vec3 pos;
 		Emitter emi;
+		layerHeight = zHeight;
 
 		for (int k = 0; k < layerSize; k++) {
 			for (int i = 0; i < collumnSize; i++) {
@@ -48,7 +49,7 @@ public:
 
 					float xVal = (j * cm) * (transSize + space);
 					float yVal = (i * cm) * (transSize + space);
-					float zVal = layerHeight * k;
+					float zVal = layerHeight;
 
 					pos = vec3(xVal, zVal, yVal);
 					emi = Emitter();
@@ -72,6 +73,7 @@ public:
 
 	void DrawArray(Model model, Shader shader, mat4 mod, Emitter selected, SerialConnection &ser){
 		vec3 pos;
+		AssignPhasesToArray(GetParticle(0));
 
 		for (Emitter emi : emitters) {
 			//Drawing the Emitters
@@ -82,13 +84,11 @@ public:
 			mat4 scaling = mat4(1.0f);
 			
 			translation = translate(translation,pos);
-
 			scaling = scale(scaling, vec3(cm/1.8, cm/1.8, cm/1.8));
 
-			if(selected.getCol() == emi.getCol())
-				scaling = scale(scaling, vec3(cm / 1.8, cm / 1.8, cm / 1.8));
-			
-			AssignPhasesToArray(GetParticle(0));
+			//If drawing the selected emitter
+			if (selected.getPos() == emi.getPos())
+				emi.setCol(vec3(255, 0, 0));
 
 			shader.setVec3("color", emi.getCol());
 			shader.setMat4("model", mod*translation*scaling);
@@ -173,18 +173,20 @@ public:
 	Emitter &GetEmitter(int pointer) {
 		return emitters.at(pointer);
 	}
-	Emitter &GetEmitter(float col) {
-		Emitter colEmi;
-		float error = numeric_limits<float>::max();
+	Emitter &GetEmitter(vec3 pos) {
+		Emitter posEmi;
+		float error = numeric_limits<float>::max(); // X & Z
 
 		for (Emitter& emi : emitters) {
-			if(abs(col - (emi.getCol().r)) < error){
-				error = abs(col - (emi.getCol().r));
-				colEmi = emi;
+			float score = abs(pos.x - (emi.getPos().x)) + abs(pos.z - (emi.getPos().z));
+
+			if(score < error){
+				error = score;
+				posEmi = emi;
 			}
 		}
 
-		return colEmi;
+		return posEmi;
 	}
 	vector<int> &GetPhases() {
 		vector<int> temp;
