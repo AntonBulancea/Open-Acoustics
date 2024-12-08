@@ -5,6 +5,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include<stb/stb_image.h>
+
 #include <iostream>
 #include <vector>
 #include <math.h>
@@ -34,12 +36,12 @@ const unsigned int SCR_HEIGHT = 600;
 float xpos;
 float ypos;
 
-unsigned int VAO, VBO;
-
 //OpenCv Values
-bool showCameraVid = true; // #1
-bool synchronizeVid = false;// #2
-bool calculateShadePhase = false; // #3
+bool showCameraVid = true;
+bool synchronizeVid = false;
+bool calculateShadePhase = false;
+bool isSliced = false;
+bool isUpdated = false;
 
 float LockX = .01f;
 float LockY = .01f;
@@ -76,6 +78,7 @@ int h = 0.0f;
 vec3 emiColor = vec3(0.337, 0.537, 0.859);
 vec3 parColor = vec3(0, 0.502, 0.392);
 vec3 shaColor = vec3(1.0, 0.0, 0.0);
+
 vec3 particlePos = vec3(0.0f, 0.0f, 0.0f);
 
 int main()
@@ -89,7 +92,7 @@ int main()
 
 	Model emitter = Model("emitter.obj");
 	Model particle = Model("particle.obj");
-	Model slice = Model("slice.obj");
+	Model slice = Model("sliceVox.obj");
 
 	//Create a Window
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -104,49 +107,30 @@ int main()
 
 	mat4 emiModel = mat4(1.0f);
 	mat4 parModel = mat4(1.0f);
+	mat4 sliModel = mat4(1.0f);
 
 	// Array Setup
 	arr.generateArray(emiColor, layerHeight);
-	arr.generateParticle(particlePos = arr.FindArrayCenter(.5f));
-
+	arr.generateParticle(particlePos = arr.FindArrayCenter(.2f));
+	arr.generateSlice(-(arr.FindArrayCenter(0.2)) + vec3((arr.getCm()/1.8)*10, 0, 0), 40, arr.getCm() / 8, arr.getCm()/4);
 	arr.GetParticle(0).setColor(parColor);
 	arr.GetParticle(0).setColorShad(shaColor);
 
+	float xPo = arr.getColSize();
+	float yPo = arr.getColSize();
+	float zPo = .2f;
+
 	SerialConnection serial = SerialConnection();
 	serial.begin();
-	
-	float prevX = 0, prevY = 0;
 
 	//Update Loop
 	while (!glfwWindowShouldClose(window))
 	{
-		// Update the Shadow pos
-
-		float xPo = arr.getColSize() * 1;
-		float yPo = arr.getColSize() * 1;
-		float zPo = .2f;
-		vec3 shadowPos = vec3(0,0,0);
-
-		if (prevX != 0) {
-			if (abs(xPo - prevX) < LockX || abs(yPo - prevY) < LockY) {
-				shadowPos = vec3(xPo, zPo, yPo);
-				arr.SetShadowPos(0, shadowPos);
-				prevX = xPo;
-				prevY = yPo;
-			}
-			else {
-				cout << "locked" << endl;
-			}
-		}
-		else {
-			prevX = xPo;
-			prevY = yPo;
-		}
-
 		// Calculate DeltaTime
 		currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+		arr.GetParticle(0).setPos(particlePos);
 
 		// Input
 		processInput(window);
@@ -159,18 +143,12 @@ int main()
 		emiShader.setMat4("view", view);
 		emiShader.setMat4("projection", projection);
 
-		//Draw Array and Send to Serial
-		arr.DrawArray(emitter, emiShader, emiModel, selected, serial);
-		
-		if (!synchronizeVid) {
-			arr.GetParticle(0).setPos(particlePos);
-		}
-		else {
-			particlePos = shadowPos;
-		}
+		//Draw Arrays
+		arr.DrawEmitterArray(emitter, emiShader, emiModel, selected);
 		arr.DrawParticleArray(particle, parShader, parModel);
-		
-		synchronizeVid = false;
+		if(isSliced)
+		arr.DrawSliceArray(slice, sliceShader, sliModel);
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -234,13 +212,23 @@ void processInput(GLFWwindow* window)
 		particlePos += vec3(0.0f, 1.0f, 0.0f) * partspeed;
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
 		particlePos += vec3(0.0f, -1.0f, 0.0f) * partspeed;
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+		isSliced = true;
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE)
+		isSliced = false;
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE)
+		isUpdated = true;
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && isUpdated){
+		isUpdated = false;
+		arr.UpdateSlice();
+	}
 }
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS) // Show/Hide camera window
-		showCameraVid = !showCameraVid; 
+		showCameraVid = !showCameraVid;
 	if (key == GLFW_KEY_2 && action == GLFW_PRESS) // Synchronize shade particle with main
-		synchronizeVid = true; 
+		synchronizeVid = true;
 }
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
@@ -249,7 +237,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		alpha = (radians(pitch_));
 		beta = (radians(yaw_));
 
-		r = tan(pi<float>()/2 - alpha) * cameraPos.y; // r = tan(pi/2 - a) * zPos
+		r = tan(pi<float>() / 2 - alpha) * cameraPos.y; // r = tan(pi/2 - a) * zPos
 		emiX = cos(beta) * r; // x difference from the camera pov
 		emiY = sin(beta) * r; // y difference from the camera pov
 
@@ -262,8 +250,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		*/
 
 		emiX = -(emiX)+cameraPos.x; // adding camera pos
-		emiY = -(emiY)+cameraPos.z; 
-		
+		emiY = -(emiY)+cameraPos.z;
+
 		vec3 selectedPos = vec3(emiX, layerHeight, emiY); // searching for the closest emitter
 		selected = arr.GetEmitter(selectedPos);
 	}

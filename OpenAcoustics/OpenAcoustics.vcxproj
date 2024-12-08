@@ -137,6 +137,7 @@
     <ClCompile Include="Mesh.h" />
     <ClCompile Include="Model.h" />
     <ClCompile Include="Shader.h" />
+    <ClCompile Include="stb.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Array.h" />
@@ -146,6 +147,7 @@
     <ClInclude Include="SerialConnection.h" />
     <ClInclude Include="Simulation.h" />
     <ClInclude Include="Slice.h" />
+    <ClInclude Include="Vox.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="emiFragment.glsl" />

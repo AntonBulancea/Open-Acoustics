@@ -60,6 +60,9 @@
     <ClCompile Include="Model.h">
       <Filter>Source Files\OpenGl\Object</Filter>
     </ClCompile>
+    <ClCompile Include="stb.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Emitter.h">
@@ -82,6 +85,9 @@
     </ClInclude>
     <ClInclude Include="SerialConnection.h">
       <Filter>Source Files\Serial</Filter>
+    </ClInclude>
+    <ClInclude Include="Vox.h">
+      <Filter>Source Files\Simulation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

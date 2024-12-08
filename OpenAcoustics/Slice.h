@@ -3,6 +3,8 @@
 #include <iostream>
 #include <vector>
 
+#include "Vox.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -12,27 +14,24 @@ using namespace glm;
 
 class Slice {
 private:
-	vector<float> pressure;
-	vector<vec3> colorMap;
+	vector<Vox> voxels;
+	vec3 origin;
+
 public:
-	void setPressure(float pres) {
-		pressure.push_back(pres);
+	vector<Vox> getVoxels() {
+		return voxels;
 	}
-	void setPressure(vector<float> &pressure) {
-		this->pressure = pressure;
-	}
-
-	void clearPressure() {
-		pressure.clear();
-	}
-	void clearColor() {
-		colorMap.clear();
+	vec3 getOrigin() {
+		return origin;
 	}
 
-	float getPressure(int num) {
-		return pressure.at(num);
+	void setVoxels(vector<Vox> voxels) {
+		this->voxels = voxels;
 	}
-	vec3 getColor(int num) {
-		return colorMap.at(num);
+	void setVoxels(Vox voxel) {
+		voxels.push_back(voxel);
 	}
-};	
+	void setOrigin(vec3 origin) {
+		this->origin = origin;
+	}
+};
