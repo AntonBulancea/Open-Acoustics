@@ -8,3 +8,4 @@ To move the particle, press arrows
 To change its height, press x or z
 To select an emitter, click left mouse button
 To deselect, click right button
+To show slices, press and hold E
