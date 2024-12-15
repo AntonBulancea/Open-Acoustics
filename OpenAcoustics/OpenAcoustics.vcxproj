@@ -143,6 +143,7 @@
     <ClInclude Include="Array.h" />
     <ClInclude Include="CameraInstance.h" />
     <ClInclude Include="Emitter.h" />
+    <ClInclude Include="Matematica.h" />
     <ClInclude Include="Particle.h" />
     <ClInclude Include="SerialConnection.h" />
     <ClInclude Include="Simulation.h" />

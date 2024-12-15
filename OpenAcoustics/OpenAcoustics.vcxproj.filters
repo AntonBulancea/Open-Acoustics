@@ -89,6 +89,9 @@
     <ClInclude Include="Vox.h">
       <Filter>Source Files\Simulation</Filter>
     </ClInclude>
+    <ClInclude Include="Matematica.h">
+      <Filter>Source Files\Simulation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="emiVertex.glsl">

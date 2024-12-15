@@ -18,11 +18,23 @@ private:
 	float radius;
 
 public:
+	Emitter(vec3 position = vec3(), vec3 color = vec3(), float frequency = 0, float amplitude = 0, float phased = 0, float rad = 0) {
+		setPos(position);
+		setCol(color);
+		setFrequency(frequency);
+		setAmpl(amplitude);
+		setPhase(phased);
+		setRadius(rad);
+	}
+
 	void setPos(vec3 pos) {
 		this->pos = pos;
 	}
 	void setCol(vec3 col) {
 		this->col = col;
+	}
+	void setCol(float r) {
+		this->col = vec3(r,r,r);
 	}
 	void setColFromPhase() {
 		float colPhase = getPhase() / 2;
@@ -63,5 +75,10 @@ public:
 	}
 	float getPhase() {
 		return phase;
+	}
+
+	bool operator == (Emitter e) const {
+		bool a = true; (e.getPos() == pos ? a : 0);
+		return a;
 	}
 };

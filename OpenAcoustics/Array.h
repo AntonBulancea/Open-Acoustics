@@ -35,6 +35,9 @@ private:
 	float amplitude = 12;
 	float rad = 5;
 
+	float emiPhMin = numeric_limits<int>::max();
+	float emiPhMax = -1;
+
 	vector<Emitter> emitters;
 	vector<Particle> particles;
 	vector<Slice> slices;
@@ -82,9 +85,6 @@ public:
 			for (int j = 0; j < dim; j++) {
 				for (int k = 0; k < dim; k++) {
 					Vox v = Vox(vec3(i * sep, j * sep, k * sep) - origin, vec3(1, 1, 1), voxSize, 0.0f);
-					v.setPres(sim.CalculatePressure(emitters, v));
-					v.ConvertToCol(v.getPres());
-
 					sl.setVoxels(v);
 				}
 			}
@@ -99,9 +99,6 @@ public:
 		for (int i = 0; i < dim; i++) {
 			for (int j = 0; j < dim; j++) {
 				Vox vox = Vox(vec3(i * sep, j * sep, 0) - origin, vec3(1, 1, 1), voxSize, 0.0f);
-
-				vox.setPres(sim.CalculatePressure(emitters, vox));
-				vox.setCol(vox.ConvertToCol(vox.getPres()));
 				sl.setVoxels(vox);
 			}
 		}
@@ -109,13 +106,13 @@ public:
 		slices.push_back(sl);
 	}
 
-	void DrawEmitterArray(Model model, Shader shader, mat4 mod, Emitter selected) {
+	void DrawEmitterArray(Model model, Shader shader, mat4 mod, vector<Emitter>& sel) {
 		vec3 pos;
 		AssignPhasesToArray(GetParticle(0));
 
 		for (Emitter emi : emitters) {
-			//Drawing the Emitters
 
+			//Drawing the Emitters
 			pos = emi.getPos();
 
 			mat4 translation = mat4(1.0f);
@@ -125,17 +122,14 @@ public:
 			scaling = scale(scaling, vec3(cm / 1.8, cm / 1.8, cm / 1.8));
 
 			//If drawing the selected emitter
-			if (selected.getPos() == emi.getPos())
-				emi.setCol(vec3(255, 0, 0));
-
 			shader.setVec3("color", emi.getCol());
 			shader.setMat4("model", mod * translation * scaling);
 			shader.use();
 
-			//Sending Info to Serial Port
+			/*Sending Info to Serial Port
 
-			//int ph = emi.getPhase();
-			//ser.SendPhase(ph);
+			int ph = emi.getPhase();
+			ser.SendPhase(ph);*/
 
 			model.Draw(shader);
 		}
@@ -170,34 +164,29 @@ public:
 	void DrawSliceArray(Model model, Shader shader, mat4 mod) {
 		Simulation sim;
 		Slice sli = slices.at(0);
-		
-			for (Vox vox : sli.getVoxels()) {
-				mat4 translation = mat4(1.0f);
-				mat4 scaling = mat4(1.0f);
+		int p = 0;
 
-				translation = translate(translation, vox.getPos());
-				scaling = scale(scaling, vox.getSiz());
-				
-				vox.setPres(sim.CalculatePressure(emitters, vox));
-				vox.setCol(vox.ConvertToCol(vox.getPres()));
+		for (Vox vox : sli.getVoxels()) {
+			vox.setPres(sim.CalculatePressure(emitters, vox));
+			sli.compareValues(vox.getPres());
+			sli.setVoxels(vox, p);
+			p++;
+		}
 
-				shader.setMat4("model", mod * translation * scaling);
-				shader.setVec3("color", vox.getCol());
+		for (Vox vox : sli.getVoxels()) {
+			mat4 translation = mat4(1.0f);
+			mat4 scaling = mat4(1.0f);
 
-				model.Draw(shader);
-			}
-	}
+			translation = translate(translation, vox.getPos());
+			scaling = scale(scaling, vox.getSiz());
 
-	void UpdateSlice() {
-		// Doesnt work :(
-		Simulation sim;
-		for (int i = 0; i < slices.at(0).getVoxels().size(); i++) {
-			Vox v = slices.at(0).getVoxels().at(i);
-
-			v.setPres(sim.CalculatePressure(emitters, v));
-			v.setCol(v.ConvertToCol(v.getPres()));
+			vox.setCol(vox.ConvertToCol(vox.getPres(), sli.getMin(), sli.getMax()));
+			shader.setMat4("model", mod * translation * scaling);
+			shader.setVec3("color", vox.getCol());
+			model.Draw(shader);
 		}
 	}
+
 	void SetParticlePos(int n, vec3 pos) {
 		particles.at(n).setPos(pos);
 	}
@@ -207,10 +196,17 @@ public:
 	void AssignPhasesToArray(Particle par) {
 		vec3 pos = par.getPos();
 		Simulation sim;
+		Matematica mata;
+
 		for (Emitter& emi : emitters) {
-			emi.setPhase(sim.CalculatePhase(emi, par));
-			emi.setColFromPhase();
+			emi.setPhase(sim.CalculatePhase(emi, par, getCm()));
+			if (emi.getPhase() > emiPhMax)
+				emiPhMax = emi.getPhase();
+			if (emi.getPhase() < emiPhMin)
+				emiPhMin = emi.getPhase();
 		}
+		for (Emitter& emi : emitters)
+			emi.setCol(mata.mapFloat(emi.getPhase(), emiPhMin, emiPhMax, 0, 1, 0.5, 0));
 	}
 
 	int getColSize() {
@@ -243,6 +239,21 @@ public:
 		}
 
 		return posEmi;
+	}
+	Vox& GetVoxel(vec3 pos) {
+		Vox vox = slices.at(0).getVoxels().at(0);
+		float error = numeric_limits<float>::max(); // X & Z
+
+		/*for (Vox& v : slices.at(0).getVoxels()) {
+			float score = abs(pos.x - (v.getPos().x)) + abs(pos.y - (v.getPos().y)) + abs(pos.z - (v.getPos().z));
+
+			if (score < error) {
+				error = score;
+				vox = v;
+			}
+		}*/
+
+		return vox;
 	}
 	vector<int>& GetPhases() {
 		vector<int> temp;

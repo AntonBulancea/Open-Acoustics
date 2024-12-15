@@ -10,7 +10,7 @@ using namespace std;
 /*
 From Simulation.h you know the drill
 I have no idea how to serial access an FPGA
-So for now we're writing into a file
+So for now we're writing into a file   <<----- Barely (15/12/24)
 Everything else sounds like a you problem
 
 Good luck there
@@ -34,7 +34,7 @@ public:
 	void close() {
 		out.close();
 	}
-	void SendPhase(int &phase) {
+	void SendPhase(int &phase, Emitter emi) {
 		out.clear();
 		out << phase << endl;
 	}

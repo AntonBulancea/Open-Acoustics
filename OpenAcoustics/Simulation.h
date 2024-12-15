@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -9,44 +9,81 @@
 #include "Emitter.h"
 #include "Vox.h"
 #include "Slice.h"
+#include <complex>
 
-using namespace glm;
+#define pi 3.14159
+#define e  2.71828
+#define sound_s 343
+
+/*
+Formulas from below were discovered and described
+by A. Marzo, T. Corkett and B. W. Drinkwater.
+I thank them for their incredible contribution
+to this project!
+
+Cited as
+A. Marzo, T. Corkett and B. W. Drinkwater, 
+"Ultraino: An Open Phased-Array System for Narrowband Airborne Ultrasound Transmission,"
+in IEEE Transactions on Ultrasonics, Ferroelectrics, and Frequency Control, vol. 65, no. 1, pp. 102-111, Jan. 2018, 
+doi: 10.1109/TUFFC.2017.2769399
+*/
 
 class Simulation {
 private:
-	float speedOfSound = 343000;
-	float excitationVoltage = 1;
-	
-	float decPart(float a) {
-		return a - ((int)a);
-	}
-	float pi() {
-		return  3.14159274101257324219f;
-	}
-	float e() {
-		return 2.71828;
+	float angleVec(vec3 a, vec3 b) {
+		a *= 10;
+		b *= 10;
+		vec3 a_norm = normalize(a);
+		vec3 b_norm = normalize(b);
+		return acos(dot(a_norm, b_norm));
 	}
 	float sinc(float x) {
-		if (x == 0.0f) {
-			return 1.0f;
-		}
-		else {
-			return sin(x) / x;
-		}
-	}
-	float angleBetweenVectors(vec3 a, vec3 b) {
-		float dotProduct = dot(a, b);
-		float magnitudeA = length(a);
-		float magnitudeB = length(b);
-		float cosTheta = dotProduct / (magnitudeA * magnitudeB);
-		cosTheta = clamp(cosTheta, -1.0f, 1.0f);
-		float angleRadians = std::acos(cosTheta);
-		return angleRadians;
+		return sin(x) / x;
 	}
 
 public:
-	float CalculatePhase(Emitter &emi, Particle &par) {
+	float CalculatePressure(vector<Emitter>& emit, Vox& targ, bool debil = false) {
+		float sum = 0.0f;
 
+		float threshold = 10;
+		for (Emitter et : emit) {
+			float Po = 1;
+			float A = 1;
+
+			float omega = pi * 2 * 40000;
+			float k = omega / sound_s;
+
+			float a = 0.9;
+			float angle = angleVec(et.getPos(), targ.getPos());
+			float dm = (a / 2) * k * sin(angle);
+			float d = distance(targ.getPos(), et.getPos()) / 10;
+			float Df = sinc(dm);
+			float fi = et.getPhase();
+
+			complex<float> i(0, 1);
+			float expon = cos(fi + k * d);
+
+			float Pr = expon;
+			sum += Pr;
+
+			if (false) {
+				cout << "Angle: " << angle << endl;
+				cout << "k: " << k << endl;
+				cout << "Dm: " << dm << endl;
+				cout << "Distance: " << d << endl;
+				cout << "Df (sinc Dm): " << Df << endl;
+				cout << "Fi: " << fi << endl;
+				cout << "Expon: " << expon << endl;
+				cout << "Pressure: " << Pr << endl;
+				cout << "DfD: " << Df / d << endl;
+				cout << endl;
+			}
+		}
+
+
+		return sum;
+	}
+	float CalculatePhase(Emitter& emi, Particle targ, float cm) {
 		/*
 			Attention future me,
 			i have no idea if the code below actually
@@ -56,40 +93,16 @@ public:
 
 			Love, Anton.
 			08.07.2023
+
+			:(
+			08.12.24
 		*/
 
+		Matematica m;
+		float d = distance(emi.getPos(), targ.getPos()) / (cm * 100);
+		float waveLength = sound_s / emi.getFrequency();
+		float targetPhase = (1.0f - m.decPart(d / waveLength)) * 2.0f * pi;
 
-		vec3 emiPos = emi.getPos();
-		vec3 parPos = par.getPos();
-
-		float distance = glm::distance(emiPos,parPos);
-		float waveLenght = emi.getFrequency() / speedOfSound * 2*pi();
-
-		float r = length(distance);
-		float s = r * waveLenght;
-		
-		float targetPhase = fmodf(s,2*pi()) + 2*pi();
-		return targetPhase - 6;
-	}
-	float CalculatePressure(vector<Emitter>& emis, Vox vox) {
-		float sumPres = 1;
-		for (Emitter emi : emis) {
-			float Pr;
-
-			float Po = emi.getAmplitude();
-			float d = distance(vox.getPos(), emi.getPos());
-			float A = 2 * excitationVoltage;
-			float k = emi.getFrequency() / speedOfSound * 2 * pi();
-			float a = emi.getRadius();
-			float ph = emi.getPhase();
-			float th = angleBetweenVectors(emi.getPos(), vox.getPos());
-			float i = 1; //???
-
-			float Df = sinc(k * a * sin(th));
-
-			Pr = (Po * A * Df * pow(e(), (i * (ph + k * d)))) / d;
-			sumPres += Pr;
-		}
-		return sumPres;
+		return targetPhase / pi;
 	}
 };

@@ -7,6 +7,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Matematica.h"
+
 using namespace std;
 using namespace glm;
 
@@ -38,17 +40,17 @@ public:
 		return pres;
 	}
 
-	vec3 ConvertToCol(float press) {
-		press = 1 / press;
-		press *= 2000;
+	vec3 ConvertToCol(float press, float min, float max) {
+		Matematica mata;
+		float color = mata.invert(mata.mapFloat(press,min,max,0,1),1);
 
-		vec3 col = vec3(press, press, press);
-		//this->col = col;
-		//cout << col.x << endl;
+		/*if (color < 0.8)
+			color = 0;
+		else
+			color = 1;*/
+
+		vec3 col = vec3(color, color, color);
 		return col;
-	}
-	void SetToCol(float freq) {
-		col = ConvertToCol(freq);
 	}
 
 	void setPos(vec3 pos) {

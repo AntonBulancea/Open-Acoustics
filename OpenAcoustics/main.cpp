@@ -18,6 +18,10 @@
 #include "CameraInstance.h"
 #include "SerialConnection.h"
 
+/*
+	Made by Anton B.
+*/
+
 //Functions Call
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -48,7 +52,7 @@ float LockY = .01f;
 
 //Simulation Values
 Array arr = Array();
-Emitter selected = Emitter();
+vector<Emitter> selectedEmis;
 
 const float layerHeight = 1;
 
@@ -112,7 +116,10 @@ int main()
 	// Array Setup
 	arr.generateArray(emiColor, layerHeight);
 	arr.generateParticle(particlePos = arr.FindArrayCenter(.2f));
-	arr.generateSlice(-(arr.FindArrayCenter(0.2)) + vec3((arr.getCm()/1.8)*10, 0, 0), 40, arr.getCm() / 8, arr.getCm()/4);
+	arr.generateSlice(-(arr.FindArrayCenter(0.1)) + vec3((arr.getCm() / 1.8) * 10, 0, 0), 50, arr.getCm() / 8, arr.getCm() / 4);
+	//arr.generateSlice(-(arr.FindArrayCenter(0.1)) + vec3((arr.getCm() / 1.8) * 12, 0, 0), 100, arr.getCm() / 16, arr.getCm() / 8);
+	//arr.generateSliceCube(-(arr.FindArrayBegining()) - vec3(0,0.2,0), 10, arr.getCm() / 4, arr.getCm() * 1);
+
 	arr.GetParticle(0).setColor(parColor);
 	arr.GetParticle(0).setColorShad(shaColor);
 
@@ -144,10 +151,10 @@ int main()
 		emiShader.setMat4("projection", projection);
 
 		//Draw Arrays
-		arr.DrawEmitterArray(emitter, emiShader, emiModel, selected);
+		arr.DrawEmitterArray(emitter, emiShader, emiModel, selectedEmis);
 		arr.DrawParticleArray(particle, parShader, parModel);
-		if(isSliced)
-		arr.DrawSliceArray(slice, sliceShader, sliModel);
+		if (isSliced)
+			arr.DrawSliceArray(slice, sliceShader, sliModel);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -218,10 +225,8 @@ void processInput(GLFWwindow* window)
 		isSliced = false;
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE)
 		isUpdated = true;
-	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && isUpdated){
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && isUpdated)
 		isUpdated = false;
-		arr.UpdateSlice();
-	}
 }
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -237,7 +242,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		alpha = (radians(pitch_));
 		beta = (radians(yaw_));
 
-		r = tan(pi<float>() / 2 - alpha) * cameraPos.y; // r = tan(pi/2 - a) * zPos
+		r = tan(pi / 2 - alpha) * cameraPos.y; // r = tan(pi/2 - a) * zPos
 		emiX = cos(beta) * r; // x difference from the camera pov
 		emiY = sin(beta) * r; // y difference from the camera pov
 
@@ -253,11 +258,13 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		emiY = -(emiY)+cameraPos.z;
 
 		vec3 selectedPos = vec3(emiX, layerHeight, emiY); // searching for the closest emitter
-		selected = arr.GetEmitter(selectedPos);
+
+		selectedEmis.push_back(arr.GetEmitter(selectedPos));
 	}
-	else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
-		selected = Emitter();
-	}
+	else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+		selectedEmis.clear();
+	else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+		selectedEmis.pop_back();
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
