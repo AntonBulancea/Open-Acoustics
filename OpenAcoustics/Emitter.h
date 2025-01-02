@@ -77,8 +77,17 @@ public:
 		return phase;
 	}
 
-	bool operator == (Emitter e) const {
-		bool a = true; (e.getPos() == pos ? a : 0);
+	// Position differentiation
+	bool operator == (vector<Emitter> t) const {
+			for (Emitter l : t) {
+				if (pos == l.getPos())
+					return true;
+			}
+
+		return false;
+	}
+	bool operator == (Emitter t) const {
+		bool a = true; (t.getPos() == pos ? a : 0);
 		return a;
 	}
 };

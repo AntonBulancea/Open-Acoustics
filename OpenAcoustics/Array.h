@@ -8,9 +8,9 @@
 #include "Model.h"
 #include "Shader.h"
 #include "Particle.h"
-#include "SerialConnection.h"
 #include "Slice.h"
 #include "Simulation.h"
+#include "FpgaProtocol.h"
 
 #include <vector>
 #include <iostream>
@@ -23,8 +23,8 @@ class Array {
 private:
 	const float cm = 0.1f;
 
-	int rowSize = 10;
-	int collumnSize = 10;
+	int rowSize = 8;
+	int collumnSize = 8;
 	int layerSize = 1;
 
 	float space = 0.1;
@@ -33,9 +33,9 @@ private:
 
 	float frequency = 40000;
 	float amplitude = 12;
-	float rad = 5;
+	float rad = transSize*5;
 
-	float emiPhMin = numeric_limits<int>::max();
+	float emiPhMin = 100000.0f;
 	float emiPhMax = -1;
 
 	vector<Emitter> emitters;
@@ -43,10 +43,9 @@ private:
 	vector<Slice> slices;
 
 public:
-	void generateArray(vec3 startColor, float zHeight) {
+	void generateArray(vec3 startColor) {
 		vec3 pos;
 		Emitter emi;
-		layerHeight = zHeight;
 
 		for (int k = 0; k < layerSize; k++) {
 			for (int i = 0; i < collumnSize; i++) {
@@ -54,7 +53,7 @@ public:
 
 					float xVal = (j * cm) * (transSize + space);
 					float yVal = (i * cm) * (transSize + space);
-					float zVal = layerHeight;
+					float zVal = layerHeight + 1.2*k;
 
 					pos = vec3(xVal, zVal, yVal);
 					emi = Emitter();
@@ -106,8 +105,11 @@ public:
 		slices.push_back(sl);
 	}
 
-	void DrawEmitterArray(Model model, Shader shader, mat4 mod, vector<Emitter>& sel) {
+	void DrawEmitterArray(Model model, Shader shader, mat4 mod, vector<Emitter>& sel, Serial& serial) {
 		vec3 pos;
+		FpgaProtocol prot = FpgaProtocol();
+		Matematica mata = Matematica();
+
 		AssignPhasesToArray(GetParticle(0));
 
 		for (Emitter emi : emitters) {
@@ -121,17 +123,16 @@ public:
 			translation = translate(translation, pos);
 			scaling = scale(scaling, vec3(cm / 1.8, cm / 1.8, cm / 1.8));
 
-			//If drawing the selected emitter
 			shader.setVec3("color", emi.getCol());
 			shader.setMat4("model", mod * translation * scaling);
 			shader.use();
 
-			/*Sending Info to Serial Port
-
-			int ph = emi.getPhase();
-			ser.SendPhase(ph);*/
+			if (sel.size() > 0 && emi == sel) 
+				shader.setVec3("color", vec3(0,0,1));
 
 			model.Draw(shader);
+			
+			short a = prot.calcSen(emi);
 		}
 	}
 	void DrawParticleArray(Model model, Shader shader, mat4 mod) {
@@ -227,7 +228,7 @@ public:
 	}
 	Emitter& GetEmitter(vec3 pos) {
 		Emitter posEmi;
-		float error = numeric_limits<float>::max(); // X & Z
+		float error = INT_MAX; // X & Z
 
 		for (Emitter& emi : emitters) {
 			float score = abs(pos.x - (emi.getPos().x)) + abs(pos.z - (emi.getPos().z));
@@ -240,9 +241,12 @@ public:
 
 		return posEmi;
 	}
+	vector<Emitter>& GetEmitter() {
+		return emitters;
+	}
 	Vox& GetVoxel(vec3 pos) {
 		Vox vox = slices.at(0).getVoxels().at(0);
-		float error = numeric_limits<float>::max(); // X & Z
+		float error = INT_MAX; // X & Z
 
 		/*for (Vox& v : slices.at(0).getVoxels()) {
 			float score = abs(pos.x - (v.getPos().x)) + abs(pos.y - (v.getPos().y)) + abs(pos.z - (v.getPos().z));

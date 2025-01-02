@@ -16,7 +16,8 @@
 #include "Emitter.h"
 #include "Array.h"
 #include "CameraInstance.h"
-#include "SerialConnection.h"
+#include "FpgaProtocol.h"
+#include "Serial.h"
 
 /*
 	Made by Anton B.
@@ -26,7 +27,6 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void processInput(GLFWwindow* window);
 void clearColors();
@@ -40,28 +40,19 @@ const unsigned int SCR_HEIGHT = 600;
 float xpos;
 float ypos;
 
-//OpenCv Values
-bool showCameraVid = true;
-bool synchronizeVid = false;
-bool calculateShadePhase = false;
+bool isShiftPressed = false;
 bool isSliced = false;
-bool isUpdated = false;
-
-float LockX = .01f;
-float LockY = .01f;
 
 //Simulation Values
 Array arr = Array();
-vector<Emitter> selectedEmis;
+Serial serial = Serial();
+FpgaProtocol prot = FpgaProtocol();
 
-const float layerHeight = 1;
+vector<Emitter> selectedEmis;
 
 //Time Values
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
-
-using namespace glm;
-using namespace std;
 
 //Camera Values
 vec3 cameraPos = vec3(0.0f, 0.0f, 3.0f);
@@ -75,8 +66,6 @@ float pitch_ = 0.0f;
 float lastX = 800.0f / 2.0;
 float lastY = 600.0 / 2.0;
 float fov = 90.0f;
-
-int h = 0.0f;
 
 //Emitter Colors
 vec3 emiColor = vec3(0.337, 0.537, 0.859);
@@ -102,7 +91,6 @@ int main()
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
-	glfwSetKeyCallback(window, key_callback);
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
 
 	// Set Up Matrix
@@ -114,21 +102,18 @@ int main()
 	mat4 sliModel = mat4(1.0f);
 
 	// Array Setup
-	arr.generateArray(emiColor, layerHeight);
+	arr.generateArray(emiColor);
 	arr.generateParticle(particlePos = arr.FindArrayCenter(.2f));
 	arr.generateSlice(-(arr.FindArrayCenter(0.1)) + vec3((arr.getCm() / 1.8) * 10, 0, 0), 50, arr.getCm() / 8, arr.getCm() / 4);
-	//arr.generateSlice(-(arr.FindArrayCenter(0.1)) + vec3((arr.getCm() / 1.8) * 12, 0, 0), 100, arr.getCm() / 16, arr.getCm() / 8);
-	//arr.generateSliceCube(-(arr.FindArrayBegining()) - vec3(0,0.2,0), 10, arr.getCm() / 4, arr.getCm() * 1);
 
 	arr.GetParticle(0).setColor(parColor);
 	arr.GetParticle(0).setColorShad(shaColor);
 
+	serial.configure();
+
 	float xPo = arr.getColSize();
 	float yPo = arr.getColSize();
 	float zPo = .2f;
-
-	SerialConnection serial = SerialConnection();
-	serial.begin();
 
 	//Update Loop
 	while (!glfwWindowShouldClose(window))
@@ -151,7 +136,7 @@ int main()
 		emiShader.setMat4("projection", projection);
 
 		//Draw Arrays
-		arr.DrawEmitterArray(emitter, emiShader, emiModel, selectedEmis);
+		arr.DrawEmitterArray(emitter, emiShader, emiModel, selectedEmis, serial);
 		arr.DrawParticleArray(particle, parShader, parModel);
 		if (isSliced)
 			arr.DrawSliceArray(slice, sliceShader, sliModel);
@@ -161,7 +146,6 @@ int main()
 	}
 
 	glfwTerminate();
-	serial.close();
 	return 0;
 }
 
@@ -223,17 +207,12 @@ void processInput(GLFWwindow* window)
 		isSliced = true;
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE)
 		isSliced = false;
-	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_RELEASE)
-		isUpdated = true;
-	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS && isUpdated)
-		isUpdated = false;
-}
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-	if (key == GLFW_KEY_1 && action == GLFW_PRESS) // Show/Hide camera window
-		showCameraVid = !showCameraVid;
-	if (key == GLFW_KEY_2 && action == GLFW_PRESS) // Synchronize shade particle with main
-		synchronizeVid = true;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+		isShiftPressed = true;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
+		isShiftPressed = false;
+	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
+		cout << serial.read() << endl;
 }
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
@@ -242,22 +221,23 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		alpha = (radians(pitch_));
 		beta = (radians(yaw_));
 
-		r = tan(pi / 2 - alpha) * cameraPos.y; // r = tan(pi/2 - a) * zPos
+		//tex: $$ r = tan(\frac{\displaystyle \pi }{2} - {\displaystyle \alpha})z  $$
+
+		//tex: $$ x = cos({\displaystyle \beta})r  $$
+
+		//tex: $$ y = sin({\displaystyle \beta})r  $$
+
+		r = tan(pi_c / 2 - alpha) * cameraPos.y;
 		emiX = cos(beta) * r; // x difference from the camera pov
 		emiY = sin(beta) * r; // y difference from the camera pov
-
-		/*
-		cout << "yaw: " << yaw_ << endl << "pitch: " << -pitch_ << endl;
-		cout << "x: " << cameraPos.x << endl << "y: " << cameraPos.y << endl << "z: " << cameraPos.z << endl;
-		cout << "radius: " << r << endl;
-		cout << "xBias: " << emiX << endl;
-		cout << "yBias: " << emiY << endl << endl;
-		*/
 
 		emiX = -(emiX)+cameraPos.x; // adding camera pos
 		emiY = -(emiY)+cameraPos.z;
 
-		vec3 selectedPos = vec3(emiX, layerHeight, emiY); // searching for the closest emitter
+		vec3 selectedPos = vec3(emiX, 1, emiY); // searching for the closest emitter
+
+		if (!isShiftPressed)
+			selectedEmis.clear();
 
 		selectedEmis.push_back(arr.GetEmitter(selectedPos));
 	}

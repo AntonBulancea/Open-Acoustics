@@ -83,7 +83,7 @@
     <ClInclude Include="CameraInstance.h">
       <Filter>Source Files\OpenCv</Filter>
     </ClInclude>
-    <ClInclude Include="SerialConnection.h">
+    <ClInclude Include="Serial.h">
       <Filter>Source Files\Serial</Filter>
     </ClInclude>
     <ClInclude Include="Vox.h">
@@ -91,6 +91,9 @@
     </ClInclude>
     <ClInclude Include="Matematica.h">
       <Filter>Source Files\Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="FpgaProtocol.h">
+      <Filter>Source Files\Serial</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

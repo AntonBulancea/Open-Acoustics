@@ -11,15 +11,15 @@
 #include "Slice.h"
 #include <complex>
 
-#define pi 3.14159
-#define e  2.71828
+#define pi_c 3.14159
+#define e_c  2.71828
 #define sound_s 343
 
 /*
 Formulas from below were discovered and described
 by A. Marzo, T. Corkett and B. W. Drinkwater.
 I thank them for their incredible contribution
-to this project!
+to this project and to the acoustics field!
 
 Cited as
 A. Marzo, T. Corkett and B. W. Drinkwater, 
@@ -42,7 +42,7 @@ private:
 	}
 
 public:
-	float CalculatePressure(vector<Emitter>& emit, Vox& targ, bool debil = false) {
+	float CalculatePressure(vector<Emitter>& emit, Vox& targ) {
 		float sum = 0.0f;
 
 		float threshold = 10;
@@ -50,7 +50,7 @@ public:
 			float Po = 1;
 			float A = 1;
 
-			float omega = pi * 2 * 40000;
+			float omega = pi_c * 2 * 40000;
 			float k = omega / sound_s;
 
 			float a = 0.9;
@@ -64,6 +64,9 @@ public:
 			float expon = cos(fi + k * d);
 
 			float Pr = expon;
+			
+			//tex: $$ P_t = \sum_{e_1}^{e_n} P_{0} A \frac{D_{f}(\theta_n)}{d_n} e^{i(\varphi_n + k d_n)}$$
+
 			sum += Pr;
 
 			if (false) {
@@ -97,12 +100,14 @@ public:
 			:(
 			08.12.24
 		*/
-
+	
+		//tex: $$ {\displaystyle \phi} = 1 - D( 2{\displaystyle \pi}\frac{fd}{s})$$
+		
 		Matematica m;
 		float d = distance(emi.getPos(), targ.getPos()) / (cm * 100);
 		float waveLength = sound_s / emi.getFrequency();
-		float targetPhase = (1.0f - m.decPart(d / waveLength)) * 2.0f * pi;
+		float targetPhase = (1.0f - m.decPart(d / waveLength)) * 2.0f * pi_c;
 
-		return targetPhase / pi;
+		return targetPhase / pi_c;
 	}
 };
