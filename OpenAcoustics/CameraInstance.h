@@ -116,7 +116,7 @@ public:
 			capture.open("Movement Sample.mp4");
 			capture >> frame;
 
-			//cout << "Camera Down" << endl;
+			//cout << "Camera Down" << "\n";
 		}
 
 		//frame = imread("sample.png");

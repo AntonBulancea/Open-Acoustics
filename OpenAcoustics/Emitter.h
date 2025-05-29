@@ -17,8 +17,10 @@ private:
 	float phase;
 	float radius;
 
+	int pin;
+
 public:
-	Emitter(vec3 position = vec3(), vec3 color = vec3(), float frequency = 0, float amplitude = 0, float phased = 0, float rad = 0) {
+	Emitter(vec3 position = vec3(), vec3 color = vec3(), float frequency = 0, float amplitude = 0, float phased = 0, float rad = 0, int pin = -1) {
 		setPos(position);
 		setCol(color);
 		setFrequency(frequency);
@@ -52,10 +54,13 @@ public:
 	void setRadius(float radius) {
 		this->radius = radius;
 	}
+	void setPin(int pin) {
+		this->pin = pin;
+	}
 	void DebugInfo() {
-		cout << "Emitter Info:" << endl;
-		cout << "Freq: " << freq << endl;
-		cout << "Phase: " << phase << endl << endl;
+		cout << "Phase:   " << phase << "\n";
+		cout << "Pos xyz: (" << pos.x << "," << pos.y << "," << pos.z << ")" << "\n";
+		cout << "Pin:     " << pin << "\n";
 	}
 
 	vec3 getCol() {
@@ -75,6 +80,9 @@ public:
 	}
 	float getPhase() {
 		return phase;
+	}
+	int getPin() {
+		return pin;
 	}
 
 	// Position differentiation

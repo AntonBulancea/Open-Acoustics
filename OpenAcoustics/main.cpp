@@ -20,7 +20,7 @@
 #include "Serial.h"
 
 /*
-	Made by Anton B.
+	Made by Anton B
 */
 
 //Functions Call
@@ -34,14 +34,15 @@ void clearColors();
 GLFWwindow* initializeWindow();
 
 //OpenGl Values
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1600;
+const unsigned int SCR_HEIGHT = 1200;
 
 float xpos;
 float ypos;
 
 bool isShiftPressed = false;
 bool isSliced = false;
+bool isPrinted = false;
 
 //Simulation Values
 Array arr = Array();
@@ -69,7 +70,7 @@ float fov = 90.0f;
 
 //Emitter Colors
 vec3 emiColor = vec3(0.337, 0.537, 0.859);
-vec3 parColor = vec3(0, 0.502, 0.392);
+vec3 parColor = vec3(1, 0, 1);
 vec3 shaColor = vec3(1.0, 0.0, 0.0);
 
 vec3 particlePos = vec3(0.0f, 0.0f, 0.0f);
@@ -109,6 +110,9 @@ int main()
 	arr.GetParticle(0).setColor(parColor);
 	arr.GetParticle(0).setColorShad(shaColor);
 
+	arr.SetEmitterPins();
+	arr.GenerateAssignmentList();
+
 	serial.configure();
 
 	float xPo = arr.getColSize();
@@ -122,6 +126,7 @@ int main()
 		currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+	//	particlePos = vec3(0.35,0.25,0.35);
 		arr.GetParticle(0).setPos(particlePos);
 
 		// Input
@@ -136,8 +141,9 @@ int main()
 		emiShader.setMat4("projection", projection);
 
 		//Draw Arrays
-		arr.DrawEmitterArray(emitter, emiShader, emiModel, selectedEmis, serial);
+		arr.DrawEmitterArray(emitter, emiShader, emiModel, selectedEmis, serial, true);
 		arr.DrawParticleArray(particle, parShader, parModel);
+
 		if (isSliced)
 			arr.DrawSliceArray(slice, sliceShader, sliModel);
 
@@ -190,11 +196,10 @@ void processInput(GLFWwindow* window)
 		cameraPos -= normalize(cross(cameraFront, cameraUp)) * cameraspeed;
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		cameraPos += normalize(cross(cameraFront, cameraUp)) * cameraspeed;
-
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		particlePos += cameraspeed * vec3(0.0f, 0.0f, -2.0f) /= 5;
+		particlePos += cameraspeed * vec3(0.0f, 0.0f, -2.0f) /= 10;
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		particlePos -= cameraspeed * vec3(0.0f, 0.0f, -2.0f) /= 5;
+		particlePos -= cameraspeed * vec3(0.0f, 0.0f, -2.0f) /= 10;
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
 		particlePos -= normalize(cross(vec3(0.0f, 0.0f, -2.0f), vec3(0.0f, 1.0f, 0.0f))) * partspeed;
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
@@ -212,7 +217,7 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
 		isShiftPressed = false;
 	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
-		cout << serial.read() << endl;
+		arr.PrintPhases();
 }
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
@@ -244,7 +249,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
 		selectedEmis.clear();
 	else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
-		selectedEmis.pop_back();
+		arr.SelectedEmiInfo(selectedEmis.at(0));
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {

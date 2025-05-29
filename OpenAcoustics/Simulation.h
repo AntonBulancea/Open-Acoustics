@@ -16,7 +16,7 @@
 #define sound_s 343
 
 /*
-Formulas from below were discovered and described
+Formulas from below were described
 by A. Marzo, T. Corkett and B. W. Drinkwater.
 I thank them for their incredible contribution
 to this project and to the acoustics field!
@@ -70,16 +70,16 @@ public:
 			sum += Pr;
 
 			if (false) {
-				cout << "Angle: " << angle << endl;
-				cout << "k: " << k << endl;
-				cout << "Dm: " << dm << endl;
-				cout << "Distance: " << d << endl;
-				cout << "Df (sinc Dm): " << Df << endl;
-				cout << "Fi: " << fi << endl;
-				cout << "Expon: " << expon << endl;
-				cout << "Pressure: " << Pr << endl;
-				cout << "DfD: " << Df / d << endl;
-				cout << endl;
+				cout << "Angle: " << angle << "\n";
+				cout << "k: " << k << "\n";
+				cout << "Dm: " << dm << "\n";
+				cout << "Distance: " << d << "\n";
+				cout << "Df (sinc Dm): " << Df << "\n";
+				cout << "Fi: " << fi << "\n";
+				cout << "Expon: " << expon << "\n";
+				cout << "Pressure: " << Pr << "\n";
+				cout << "DfD: " << Df / d << "\n";
+				cout << "\n";
 			}
 		}
 
@@ -99,12 +99,15 @@ public:
 
 			:(
 			08.12.24
+
+			12.02.25
+			Works now!
 		*/
 	
 		//tex: $$ {\displaystyle \phi} = 1 - D( 2{\displaystyle \pi}\frac{fd}{s})$$
 		
 		Matematica m;
-		float d = distance(emi.getPos(), targ.getPos()) / (cm * 100);
+		float d = distance(emi.getPos(), targ.getPos())/10; // Base decimiter
 		float waveLength = sound_s / emi.getFrequency();
 		float targetPhase = (1.0f - m.decPart(d / waveLength)) * 2.0f * pi_c;
 

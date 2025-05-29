@@ -33,10 +33,12 @@ private:
 
 	float frequency = 40000;
 	float amplitude = 12;
-	float rad = transSize*5;
+	float rad = transSize * 5;
 
-	float emiPhMin = 100000.0f;
+	float emiPhMin = 100000.0f; // Debug only
 	float emiPhMax = -1;
+
+	int emiAssignment = 0;
 
 	vector<Emitter> emitters;
 	vector<Particle> particles;
@@ -51,9 +53,9 @@ public:
 			for (int i = 0; i < collumnSize; i++) {
 				for (int j = 0; j < rowSize; j++) {
 
-					float xVal = (j * cm) * (transSize + space);
-					float yVal = (i * cm) * (transSize + space);
-					float zVal = layerHeight + 1.2*k;
+					float xVal = (float)i / 10;
+					float yVal = (float)j / 10;
+					float zVal = k;
 
 					pos = vec3(xVal, zVal, yVal);
 					emi = Emitter();
@@ -62,6 +64,7 @@ public:
 					emi.setAmpl(amplitude);
 					emi.setRadius(rad);
 					emi.setFrequency(frequency);
+					emi.setPin(-1);
 
 					emitters.push_back(emi);
 				}
@@ -74,6 +77,7 @@ public:
 		for (int i = 0; i < num; i++) {
 			par.setPos(pos);
 			particles.push_back(par);
+			par.setColor(vec3(0.659, 0, 0.031));
 		}
 	}
 	void generateSliceCube(vec3 origin, int dim, float voxSize, float sep) {
@@ -105,10 +109,13 @@ public:
 		slices.push_back(sl);
 	}
 
-	void DrawEmitterArray(Model model, Shader shader, mat4 mod, vector<Emitter>& sel, Serial& serial) {
+	void DrawEmitterArray(Model model, Shader shader, mat4 mod, vector<Emitter>& sel, Serial& serial, bool debug = false) {
 		vec3 pos;
 		FpgaProtocol prot = FpgaProtocol();
 		Matematica mata = Matematica();
+		string phasor = "mat = '{\n";
+
+		int i = 0;
 
 		AssignPhasesToArray(GetParticle(0));
 
@@ -121,18 +128,16 @@ public:
 			mat4 scaling = mat4(1.0f);
 
 			translation = translate(translation, pos);
-			scaling = scale(scaling, vec3(cm / 1.8, cm / 1.8, cm / 1.8));
+			scaling = scale(scaling, vec3(0.05, 0.05, 0.05));
 
 			shader.setVec3("color", emi.getCol());
 			shader.setMat4("model", mod * translation * scaling);
 			shader.use();
 
-			if (sel.size() > 0 && emi == sel) 
-				shader.setVec3("color", vec3(0,0,1));
+			if (sel.size() > 0 && emi == sel)
+				shader.setVec3("color", vec3(0, 0, 1));
 
 			model.Draw(shader);
-			
-			short a = prot.calcSen(emi);
 		}
 	}
 	void DrawParticleArray(Model model, Shader shader, mat4 mod) {
@@ -191,8 +196,61 @@ public:
 	void SetParticlePos(int n, vec3 pos) {
 		particles.at(n).setPos(pos);
 	}
+	void SetEmitterPins() {
+		ifstream file("EchoFeather.pin");
+		int cnt = 0;
+
+		string line;
+		while (getline(file, line)) {
+			/*
+			if (line.find("data[") != string::npos) { // is a working data pin
+				string token = line.substr(31);
+				string pin = "";
+				string loc = "";
+
+				for (int i = 0; i < line.length(); i++) {
+					if (token.at(i) == ' ') break;
+					pin += token.at(i);
+				}
+
+				token = line.substr(5);
+				for (int i = 0; i < line.length(); i++) {
+					if (token.at(i) == ' ') break;
+					loc += token.at(i);
+				}
+
+				emitters.at(stoi(loc)).setPin(stoi(pin));
+				//emitters.at(stoi(loc)).setPin(-1);
+			cnt++;
+			}
+			*/
+
+			int a = stoi(line.substr(4, line.length()));
+			emitters.at(cnt).setPin(a);
+			cnt++;
+		}
+
+		file.close();
+	}
+	void SelectedEmiInfo(Emitter sel) {
+		int i = GetEmiPointer(sel.getPos());
+
+		cout << "\n" << "Selected emitter: " << i << "\n";
+		emitters.at(i).DebugInfo();
+	}
 	void SetShadowPos(int n, vec3 pos) {
 		particles.at(n).setPosShad(pos);
+	}
+	void GenerateAssignmentList() {
+		string total = "";
+		for (int i = 0; i < emitters.size(); i++) {
+			total += "PIN_" + to_string(emitters.at(i).getPin()) + "\n";
+		}
+
+		ofstream file("assignments.txt");
+		file << total;
+
+		file.close();
 	}
 	void AssignPhasesToArray(Particle par) {
 		vec3 pos = par.getPos();
@@ -207,7 +265,24 @@ public:
 				emiPhMin = emi.getPhase();
 		}
 		for (Emitter& emi : emitters)
-			emi.setCol(mata.mapFloat(emi.getPhase(), emiPhMin, emiPhMax, 0, 1, 0.5, 0));
+			emi.setCol(mata.mapFloat(emi.getPhase(), emiPhMin, emiPhMax, 0, 1, 1, 0));
+	}
+	void PrintPhases() {
+		int i = 0;
+		FpgaProtocol prott = FpgaProtocol();
+
+		cout << "\nmat = '{\n";
+		for (Emitter& emi : emitters) {
+			cout << prott.calcSen(emi);
+			if (i < 63)
+				cout << ", ";
+
+			if (i % 8 == 0 && i != 0)
+				cout << "\n";
+			i++;
+		}
+
+		cout << "\n};" << endl;
 	}
 
 	int getColSize() {
@@ -240,6 +315,22 @@ public:
 		}
 
 		return posEmi;
+	}
+	int& GetEmiPointer(vec3 pos) {
+		Emitter posEmi;
+		float error = INT_MAX; // X & Z
+
+		int pointer = 0;
+		for (int i = 0; i < emitters.size(); i++) {
+			float score = abs(pos.x - (emitters.at(i).getPos().x)) + abs(pos.z - (emitters.at(i).getPos().z));
+
+			if (score < error) {
+				error = score;
+				pointer = i;
+			}
+		}
+
+		return pointer;
 	}
 	vector<Emitter>& GetEmitter() {
 		return emitters;

@@ -20,13 +20,13 @@ public:
 			NULL);
 
 		if (hSerial == INVALID_HANDLE_VALUE)
-			std::cerr << "Error opening serial port" << endl;
+			std::cerr << "Error opening serial port" << "\n";
 
 		DCB dcbSerialParams = { 0 };
 		dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
 
 		if (!GetCommState(hSerial, &dcbSerialParams))
-			cerr << "Error getting serial port state" << endl;
+			cerr << "Error getting serial port state" << "\n";
 
 		dcbSerialParams.BaudRate = CBR_9600;
 		dcbSerialParams.ByteSize = 16;
@@ -34,7 +34,7 @@ public:
 		dcbSerialParams.Parity = NOPARITY;
 
 		if (!SetCommState(hSerial, &dcbSerialParams))
-			cerr << "Error setting serial port state" << endl;
+			cerr << "Error setting serial port state" << "\n";
 
 		COMMTIMEOUTS timeouts;
 		timeouts.ReadIntervalTimeout = 0;
@@ -44,7 +44,7 @@ public:
 		timeouts.WriteTotalTimeoutConstant = 0;
 
 		if (!SetCommTimeouts(hSerial, &timeouts)) {
-			cerr << "Error setting timeouts" << endl;
+			cerr << "Error setting timeouts" << "\n";
 		}
 	}
 	void write(string data) {
@@ -65,6 +65,7 @@ public:
 			std::cout << "Data written: " << data << std::endl;
 		}
 	}
+
 	void write(short data) {
 		OVERLAPPED ov = { 0 };
 		ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL); // Event for async I/O

@@ -11,11 +11,12 @@
 using namespace std;
 class FpgaProtocol {
 private:
-	int resolution = 5000; //How many clock cycles for a wave (0; 2pi)
+	int resolution = 1250; //How many clock cycles for a wave (0; 2pi)
 	int freq = 40000;
 	vector<int> sen;
 	string promp = " ";
 
+	float biggest = 0;
 	int checkSuitability(int x, vector<int> s) {
 		if (find(s.begin(), s.end(), x) != s.end())
 			return checkSuitability(x - 1, s);
@@ -24,16 +25,13 @@ private:
 	}
 public:
 	int calcSen(Emitter emi) {
-		Matematica m;
-		int a = (int)m.mapFloat(emi.getPhase(), 0, pi_c * 2, 0, resolution);
-		int s = checkSuitability(a, sen);
-
-		promp += to_string(s) + " ";
-		sen.push_back(s);
-
-		return s;
+		int c = static_cast<int>(std::round(emi.getPhase()/(2*pi_c) * resolution));
+		return c;
 	}
 
+	int error() {
+		return biggest;
+	}
 	string getSen() {
 		return promp;
 	}
